@@ -149,6 +149,27 @@ private let screens = [laptop, monitor]
             == Layout.frame(for: .right, in: laptop.visibleFrame))
     }
 
+    @Test func windowAcrossTheEdgeSnapsToTheHalfNextToIt() {
+        // Mostly on the laptop, sticking out onto the monitor to its right.
+        let straddling = CGRect(x: 1000, y: 100, width: 800, height: 600)
+        let laptopRight = Layout.frame(for: .right, in: laptop.visibleFrame)
+        #expect(Layout.target(for: .left, window: straddling, screens: screens) == laptopRight)
+        #expect(Layout.target(for: .right, window: straddling, screens: screens) == laptopRight)
+
+        // Mostly on the monitor, sticking out onto the laptop to its left.
+        let other = CGRect(x: 1300, y: 100, width: 800, height: 600)
+        let monitorLeft = Layout.frame(for: .left, in: monitor.visibleFrame)
+        #expect(Layout.target(for: .left, window: other, screens: screens) == monitorLeft)
+        #expect(Layout.target(for: .right, window: other, screens: screens) == monitorLeft)
+    }
+
+    @Test func windowSpillingOffTheOuterEdgeKeepsNormalBehaviour() {
+        // Hangs off the left of the laptop where there is no screen.
+        let offEdge = CGRect(x: -100, y: 100, width: 600, height: 400)
+        #expect(Layout.target(for: .right, window: offEdge, screens: screens)
+            == Layout.frame(for: .right, in: laptop.visibleFrame))
+    }
+
     @Test func upAndDownNeverChangeScreen() {
         let topHalf = Layout.frame(for: .top, in: laptop.visibleFrame)
         #expect(Layout.target(for: .top, window: topHalf, screens: screens) == topHalf)

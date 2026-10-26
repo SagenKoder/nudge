@@ -120,6 +120,11 @@ public enum Layout {
             if alreadyThere, let next = adjacentScreenIndex(to: current, direction: action, in: screens) {
                 return frame(for: action.opposite, in: screens[next].visibleFrame)
             }
+            // A window across the edge to a neighbouring screen goes to the half next to that
+            // edge first; otherwise pressing towards its own screen would skip that half.
+            if !alreadyThere, let edge = sharedEdgeCrossed(by: window, from: current, in: screens) {
+                return frame(for: edge, in: screens[current].visibleFrame)
+            }
         }
         return destination
     }
@@ -137,6 +142,23 @@ public enum Layout {
     public static func approximatelyEqual(_ a: CGRect, _ b: CGRect, tolerance: CGFloat = 2) -> Bool {
         abs(a.minX - b.minX) <= tolerance && abs(a.minY - b.minY) <= tolerance
             && abs(a.width - b.width) <= tolerance && abs(a.height - b.height) <= tolerance
+    }
+
+    /// `.left` or `.right` when the window sticks out of its screen onto exactly one neighbour on that side.
+    private static func sharedEdgeCrossed(by window: CGRect, from current: Int, in screens: [Screen]) -> Action? {
+        let here = screens[current].frame
+        func spillsOnto(_ side: Action) -> Bool {
+            guard let next = adjacentScreenIndex(to: current, direction: side, in: screens) else { return false }
+            let overlap = screens[next].frame.intersection(window)
+            return !overlap.isNull && overlap.width > 1 && overlap.height > 1
+        }
+        let left = window.minX < here.minX - 1 && spillsOnto(.left)
+        let right = window.maxX > here.maxX + 1 && spillsOnto(.right)
+        switch (left, right) {
+        case (true, false): return .left
+        case (false, true): return .right
+        default: return nil
+        }
     }
 
     private static func distance(_ a: CGRect, _ b: CGRect) -> CGFloat {
