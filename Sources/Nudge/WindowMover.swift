@@ -11,6 +11,18 @@ final class WindowMover {
     private var lastWindow: AXUIElement?
     private var lastMove: LastMove?
 
+    /// Short enough that heavy apps barely get to redraw mid-way, long enough to read as motion.
+    private static let animationDuration: CFTimeInterval = 0.12
+    private struct Animation {
+        let window: AXUIElement
+        let from: CGRect
+        let to: CGRect
+        let started: CFTimeInterval
+        let completion: () -> Void
+    }
+    private var animation: Animation?
+    private var timer: Timer?
+
     static func ensureTrusted(prompt: Bool) -> Bool {
         let options = ["AXTrustedCheckOptionPrompt": prompt] as CFDictionary
         return AXIsProcessTrustedWithOptions(options)
@@ -21,6 +33,8 @@ final class WindowMover {
             WindowMover.log.error("Accessibility permission missing")
             return
         }
+        // A press mid-animation first lands the previous move, so repeat presses still jump screens.
+        finishAnimation()
         guard let window = focusedWindow(), let current = frame(of: window) else { return }
 
         let remembered = lastWindow.map { CFEqual($0, window) } == true ? lastMove : nil
@@ -28,16 +42,44 @@ final class WindowMover {
             for: action, window: current, screens: WindowMover.screens(), lastMove: remembered
         ) else { return }
 
-        setFrame(target, of: window)
+        animate(window, from: current, to: target) { [self] in
+            let result = frame(of: window)
+            WindowMover.log.info("""
+                \(action.rawValue, privacy: .public): \(String(describing: current), privacy: .public) \
+                → \(String(describing: target), privacy: .public), got \(String(describing: result), privacy: .public), \
+                repeat=\(remembered != nil, privacy: .public)
+                """)
+            lastWindow = window
+            lastMove = result.map { LastMove(action: action, target: target, resultingFrame: $0) }
+        }
+    }
 
-        let result = frame(of: window)
-        WindowMover.log.info("""
-            \(action.rawValue, privacy: .public): \(String(describing: current), privacy: .public) \
-            → \(String(describing: target), privacy: .public), got \(String(describing: result), privacy: .public), \
-            repeat=\(remembered != nil, privacy: .public)
-            """)
-        lastWindow = window
-        lastMove = result.map { LastMove(action: action, target: target, resultingFrame: $0) }
+    // MARK: - Animation
+
+    private func animate(_ window: AXUIElement, from: CGRect, to: CGRect, completion: @escaping () -> Void) {
+        animation = Animation(window: window, from: from, to: to, started: CACurrentMediaTime(), completion: completion)
+        timer = Timer.scheduledTimer(withTimeInterval: 1.0 / 60, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated { self?.step() }
+        }
+    }
+
+    private func step() {
+        guard let animation else { return }
+        let progress = (CACurrentMediaTime() - animation.started) / WindowMover.animationDuration
+        guard progress < 1 else { return finishAnimation() }
+        let frame = Layout.interpolate(from: animation.from, to: animation.to, progress: progress)
+        write(frame.origin, kAXPositionAttribute, of: animation.window, as: .cgPoint)
+        write(frame.size, kAXSizeAttribute, of: animation.window, as: .cgSize)
+    }
+
+    /// Jumps to the end frame exactly, then runs the completion.
+    private func finishAnimation() {
+        timer?.invalidate()
+        timer = nil
+        guard let animation else { return }
+        self.animation = nil
+        setFrame(animation.to, of: animation.window)
+        animation.completion()
     }
 
     // MARK: - Screens

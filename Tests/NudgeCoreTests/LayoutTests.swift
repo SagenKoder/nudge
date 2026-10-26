@@ -154,3 +154,23 @@ private let screens = [laptop, monitor]
         #expect(Layout.target(for: .top, window: topHalf, screens: screens) == topHalf)
     }
 }
+
+@Suite struct Interpolate {
+    let from = CGRect(x: 0, y: 0, width: 100, height: 100)
+    let to = CGRect(x: 1000, y: 200, width: 500, height: 300)
+
+    @Test func startsAndEndsExactly() {
+        #expect(Layout.interpolate(from: from, to: to, progress: 0) == from)
+        #expect(Layout.interpolate(from: from, to: to, progress: 1) == to)
+    }
+
+    @Test func clampsProgressOutsideZeroToOne() {
+        #expect(Layout.interpolate(from: from, to: to, progress: -1) == from)
+        #expect(Layout.interpolate(from: from, to: to, progress: 2) == to)
+    }
+
+    @Test func easesOutSoTheFirstHalfCoversMostOfTheDistance() {
+        // 1 - (1 - 0.5)^3 = 0.875
+        #expect(Layout.interpolate(from: from, to: to, progress: 0.5).minX == 875)
+    }
+}

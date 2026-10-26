@@ -1,4 +1,5 @@
 import CoreGraphics
+import Foundation
 
 /// All rectangles in this module use the Accessibility coordinate space:
 /// origin at the top-left of the primary screen, y grows downwards.
@@ -121,6 +122,16 @@ public enum Layout {
             }
         }
         return destination
+    }
+
+    /// The frame `progress` (0...1) of the way from `from` to `to`, easing out so it settles gently.
+    public static func interpolate(from: CGRect, to: CGRect, progress: Double) -> CGRect {
+        let t = 1 - pow(1 - min(max(progress, 0), 1), 3)
+        func mix(_ a: CGFloat, _ b: CGFloat) -> CGFloat { (a + (b - a) * t).rounded() }
+        return CGRect(
+            x: mix(from.minX, to.minX), y: mix(from.minY, to.minY),
+            width: mix(from.width, to.width), height: mix(from.height, to.height)
+        )
     }
 
     public static func approximatelyEqual(_ a: CGRect, _ b: CGRect, tolerance: CGFloat = 2) -> Bool {
