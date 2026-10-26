@@ -33,7 +33,7 @@ With [Homebrew](https://brew.sh):
 ```sh
 brew tap sagenkoder/tap
 brew trust sagenkoder/tap   # Homebrew asks you to trust third-party taps once
-brew install --cask nudge
+brew install --cask sagenkoder/tap/nudge   # the full name matters: plain "nudge" is a different app
 ```
 
 Or download `Nudge-x.y.z.dmg` from the [latest release](https://github.com/SagenKoder/nudge/releases/latest)
