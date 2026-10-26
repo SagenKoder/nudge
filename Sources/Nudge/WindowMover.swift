@@ -58,7 +58,7 @@ final class WindowMover {
 
     private func animate(_ window: AXUIElement, from: CGRect, to: CGRect, completion: @escaping () -> Void) {
         animation = Animation(window: window, from: from, to: to, started: CACurrentMediaTime(), completion: completion)
-        timer = Timer.scheduledTimer(withTimeInterval: 1.0 / 60, repeats: true) { [weak self] _ in
+        timer = Timer.scheduledTimer(withTimeInterval: 1.0 / 120, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated { self?.step() }
         }
     }
