@@ -33,10 +33,14 @@ public struct Screen: Equatable, Sendable {
 /// even when the app rounded the size (terminals snap to their character grid).
 public struct LastMove: Equatable, Sendable {
     public var action: Action
+    /// The frame we asked for.
+    public var target: CGRect
+    /// The frame the window actually ended up with.
     public var resultingFrame: CGRect
 
-    public init(action: Action, resultingFrame: CGRect) {
+    public init(action: Action, target: CGRect, resultingFrame: CGRect) {
         self.action = action
+        self.target = target
         self.resultingFrame = resultingFrame
     }
 }
@@ -108,8 +112,10 @@ public enum Layout {
         let destination = frame(for: action, in: screens[current].visibleFrame)
 
         if action == .left || action == .right {
+            // Only a repeat if we last put the window in this very half. After a jump to the
+            // next screen it sits in the opposite half, and the next press should fill this one.
             let alreadyThere = approximatelyEqual(window, destination)
-                || (lastMove?.action == action && approximatelyEqual(window, lastMove!.resultingFrame))
+                || lastMove.map { approximatelyEqual($0.target, destination) && approximatelyEqual(window, $0.resultingFrame) } == true
             if alreadyThere, let next = adjacentScreenIndex(to: current, direction: action, in: screens) {
                 return frame(for: action.opposite, in: screens[next].visibleFrame)
             }

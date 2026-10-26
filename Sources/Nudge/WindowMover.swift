@@ -30,8 +30,14 @@ final class WindowMover {
 
         setFrame(target, of: window)
 
+        let result = frame(of: window)
+        WindowMover.log.info("""
+            \(action.rawValue, privacy: .public): \(String(describing: current), privacy: .public) \
+            → \(String(describing: target), privacy: .public), got \(String(describing: result), privacy: .public), \
+            repeat=\(remembered != nil, privacy: .public)
+            """)
         lastWindow = window
-        lastMove = frame(of: window).map { LastMove(action: action, resultingFrame: $0) }
+        lastMove = result.map { LastMove(action: action, target: target, resultingFrame: $0) }
     }
 
     // MARK: - Screens

@@ -113,14 +113,38 @@ private let screens = [laptop, monitor]
     @Test func recognisesARepeatWhenTheAppRoundedTheSize() {
         // Terminals snap to their character grid, so the window ends up a bit smaller than asked.
         let snapped = CGRect(x: 720, y: 25, width: 713, height: 868)
-        let last = LastMove(action: .right, resultingFrame: snapped)
+        let last = LastMove(action: .right, target: Layout.frame(for: .right, in: laptop.visibleFrame), resultingFrame: snapped)
         #expect(Layout.target(for: .right, window: snapped, screens: screens, lastMove: last)
             == Layout.frame(for: .left, in: monitor.visibleFrame))
     }
 
+    @Test func pressingLeftAfterAJumpFillsTheLeftHalfBeforeJumpingAgain() {
+        // Three screens: left | laptop | monitor. Walk a window leftwards from the monitor.
+        let farLeft = Screen(
+            frame: CGRect(x: -2560, y: 0, width: 2560, height: 1440),
+            visibleFrame: CGRect(x: -2560, y: 0, width: 2560, height: 1440)
+        )
+        let three = [laptop, monitor, farLeft]
+        var window = CGRect(x: 2000, y: 100, width: 800, height: 600)
+        var last: LastMove?
+        func press(_ action: Action) {
+            window = Layout.target(for: action, window: window, screens: three, lastMove: last)!
+            last = LastMove(action: action, target: window, resultingFrame: window)
+        }
+
+        press(.left)
+        #expect(window == Layout.frame(for: .left, in: monitor.visibleFrame))
+        press(.left)
+        #expect(window == Layout.frame(for: .right, in: laptop.visibleFrame))
+        press(.left)
+        #expect(window == Layout.frame(for: .left, in: laptop.visibleFrame))
+        press(.left)
+        #expect(window == Layout.frame(for: .right, in: farLeft.visibleFrame))
+    }
+
     @Test func lastMoveInAnotherDirectionIsNotARepeat() {
         let snapped = CGRect(x: 720, y: 25, width: 713, height: 868)
-        let last = LastMove(action: .left, resultingFrame: snapped)
+        let last = LastMove(action: .left, target: Layout.frame(for: .left, in: laptop.visibleFrame), resultingFrame: snapped)
         #expect(Layout.target(for: .right, window: snapped, screens: screens, lastMove: last)
             == Layout.frame(for: .right, in: laptop.visibleFrame))
     }
