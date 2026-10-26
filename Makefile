@@ -11,7 +11,7 @@ DOMAIN    := gui/$(shell id -u)
 IDENTITY  ?= $(shell security find-identity -v -p codesigning 2>/dev/null | grep -m1 -o '"Apple Development[^"]*"' | tr -d '"' || true)
 SIGN_AS   := $(if $(IDENTITY),$(IDENTITY),-)
 
-.PHONY: all build test app install uninstall restart logs clean
+.PHONY: all build test app icon install uninstall restart logs clean
 
 all: app
 
@@ -23,9 +23,10 @@ test:
 
 app: build
 	rm -rf $(BUILD_APP)
-	mkdir -p $(BUILD_APP)/Contents/MacOS
+	mkdir -p $(BUILD_APP)/Contents/MacOS $(BUILD_APP)/Contents/Resources
 	cp "$$(swift build -c release --show-bin-path)/Nudge" $(BUILD_APP)/Contents/MacOS/Nudge
 	sed 's/__VERSION__/$(VERSION)/g' Support/Info.plist > $(BUILD_APP)/Contents/Info.plist
+	cp Support/AppIcon.icns $(BUILD_APP)/Contents/Resources/AppIcon.icns
 	codesign --force --options runtime --timestamp=none --sign "$(SIGN_AS)" $(BUILD_APP)
 	@echo "Signed with: $(SIGN_AS)"
 
@@ -43,6 +44,9 @@ uninstall:
 	rm -f $(AGENT)
 	rm -rf $(APP)
 	@echo "Removed. You can also remove Nudge from System Settings → Privacy & Security → Accessibility."
+
+icon:
+	swift scripts/make-icon.swift
 
 restart:
 	launchctl kickstart -k $(DOMAIN)/$(LABEL)

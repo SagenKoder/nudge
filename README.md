@@ -1,3 +1,5 @@
+<img src="Support/AppIcon.png" width="128" alt="Nudge icon">
+
 # Nudge
 
 A tiny macOS window snapper. No menu bar icon, no settings window, no donation prompts. Just five shortcuts.
@@ -32,6 +34,7 @@ Rectangle, Spectacle and similar tools that use the same shortcuts must be quit 
 make test       # unit tests for the layout logic
 make restart    # restart the running app
 make logs       # stream its logs
+make icon       # redraw Support/AppIcon.icns from scripts/make-icon.swift
 make uninstall  # stop it and remove the app and LaunchAgent
 ```
 
