@@ -1,0 +1,75 @@
+name: Release
+
+# Runs when a version tag like v1.2.3 is pushed. Builds a universal app, signs it
+# with the Developer ID certificate, notarizes it with Apple, and publishes the DMG.
+on:
+  push:
+    tags: ['v[0-9]+.[0-9]+.[0-9]+']
+
+permissions: {}
+
+jobs:
+  release:
+    runs-on: macos-15
+    # Secrets live in this environment, not at repo level, so only tag builds can read them.
+    environment: release
+    permissions:
+      contents: write      # create the GitHub release
+      id-token: write      # sign the build provenance attestation
+      attestations: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Unit tests
+        run: swift test
+
+      - name: Import Developer ID certificate into a throwaway keychain
+        env:
+          DEVELOPER_ID_P12: ${{ secrets.DEVELOPER_ID_P12 }}
+          DEVELOPER_ID_P12_PASSWORD: ${{ secrets.DEVELOPER_ID_P12_PASSWORD }}
+        run: |
+          keychain="$RUNNER_TEMP/signing.keychain-db"
+          keychain_password="$(openssl rand -base64 32)"
+          security create-keychain -p "$keychain_password" "$keychain"
+          security set-keychain-settings -lut 3600 "$keychain"
+          security unlock-keychain -p "$keychain_password" "$keychain"
+          printf '%s' "$DEVELOPER_ID_P12" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security import "$RUNNER_TEMP/cert.p12" -k "$keychain" -P "$DEVELOPER_ID_P12_PASSWORD" -T /usr/bin/codesign
+          rm -f "$RUNNER_TEMP/cert.p12"
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$keychain_password" "$keychain" > /dev/null
+          security list-keychains -d user -s "$keychain" $(security list-keychains -d user | tr -d '"')
+          identity="$(security find-identity -v -p codesigning "$keychain" | grep -m1 -o '"Developer ID Application[^"]*"' | tr -d '"')"
+          test -n "$identity" || { echo "No Developer ID Application identity in the certificate"; exit 1; }
+          echo "IDENTITY=$identity" >> "$GITHUB_ENV"
+          echo "KEYCHAIN=$keychain" >> "$GITHUB_ENV"
+
+      - name: Build, sign, notarize and staple
+        env:
+          NOTARY_KEY_P8: ${{ secrets.NOTARY_KEY_P8 }}
+          NOTARY_KEY_ID: ${{ secrets.NOTARY_KEY_ID }}
+          NOTARY_ISSUER: ${{ secrets.NOTARY_ISSUER }}
+        run: |
+          key="$RUNNER_TEMP/notary.p8"
+          (umask 077 && printf '%s' "$NOTARY_KEY_P8" > "$key")
+          make release VERSION="${GITHUB_REF_NAME#v}" TIMESTAMP=--timestamp NOTARY_KEY="$key"
+          rm -f "$key"
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: .build/Nudge-*.dmg
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" .build/Nudge-*.dmg .build/SHA256SUMS \
+            --title "Nudge ${GITHUB_REF_NAME#v}" --generate-notes --verify-tag
+
+      - name: Remove keychain and keys
+        if: always()
+        run: |
+          [ -n "${KEYCHAIN:-}" ] && security delete-keychain "$KEYCHAIN" || true
+          rm -f "$RUNNER_TEMP/notary.p8" "$RUNNER_TEMP/cert.p12"

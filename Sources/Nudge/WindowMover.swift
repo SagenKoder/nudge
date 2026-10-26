@@ -23,14 +23,13 @@ final class WindowMover {
     private var animation: Animation?
     private var timer: Timer?
 
-    static func ensureTrusted(prompt: Bool) -> Bool {
-        let options = ["AXTrustedCheckOptionPrompt": prompt] as CFDictionary
-        return AXIsProcessTrustedWithOptions(options)
-    }
+    /// Called when a shortcut is pressed before Accessibility access is granted.
+    var onMissingPermission: (() -> Void)?
 
     func perform(_ action: Action) {
-        guard WindowMover.ensureTrusted(prompt: true) else {
+        guard AXIsProcessTrusted() else {
             WindowMover.log.error("Accessibility permission missing")
+            onMissingPermission?()
             return
         }
         // A press mid-animation first lands the previous move, so repeat presses still jump screens.

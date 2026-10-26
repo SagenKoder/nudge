@@ -3,16 +3,15 @@ import AppKit
 // A background app: no Dock icon, no menu bar item (LSUIElement in Info.plist,
 // .accessory here for when the binary is run outside the bundle).
 MainActor.assumeIsolated {
-    let app = NSApplication.shared
-    app.setActivationPolicy(.accessory)
-
-    _ = WindowMover.ensureTrusted(prompt: true)
-
-    let mover = WindowMover()
-    let hotKeys = HotKeys { mover.perform($0) }
-    if hotKeys.register() > 0 {
-        FileHandle.standardError.write(Data("nudge: some hotkeys are taken by another app (Rectangle?)\n".utf8))
+    if CommandLine.arguments.contains("--unregister-login-item") {
+        // Used by `make uninstall`, since only the app itself can remove its login item.
+        LoginItem.setEnabled(false)
+        exit(0)
     }
 
-    withExtendedLifetime(hotKeys) { app.run() }
+    let app = NSApplication.shared
+    let delegate = AppDelegate()
+    app.delegate = delegate
+    app.setActivationPolicy(.accessory)
+    withExtendedLifetime(delegate) { app.run() }
 }

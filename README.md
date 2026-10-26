@@ -1,8 +1,18 @@
-<img src="Support/AppIcon.png" width="128" alt="Nudge icon">
+<p align="center">
+  <img src="Support/AppIcon.png" width="128" alt="Nudge icon">
+</p>
 
-# Nudge
+<h1 align="center">Nudge</h1>
 
-A tiny macOS window snapper. No menu bar icon, no settings window, no donation prompts. Just five shortcuts.
+<p align="center">
+  A tiny window snapper for macOS. Five shortcuts, no menu bar icon, nothing else.
+</p>
+
+<p align="center">
+  <a href="https://github.com/SagenKoder/nudge/actions/workflows/ci.yml"><img src="https://github.com/SagenKoder/nudge/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/SagenKoder/nudge/releases/latest"><img src="https://img.shields.io/github/v/release/SagenKoder/nudge" alt="Latest release"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT License"></a>
+</p>
 
 | Shortcut | Action |
 |---|---|
@@ -12,37 +22,59 @@ A tiny macOS window snapper. No menu bar icon, no settings window, no donation p
 | ⌃⌥ ↓ | Bottom half |
 | ⌃⌥ ↩ | Maximize |
 
-Press ⌃⌥ ← again when a window is already on the left half, and it moves to the right half of the monitor to the left. ⌃⌥ → works the same way towards the right.
+Press ⌃⌥ ← again on a window that is already on the left half, and it moves to the right half of
+the screen to the left. ⌃⌥ → works the same way to the right. Windows glide into place with a short
+animation.
 
 ## Install
 
-Requires macOS 13+ and Xcode or the Command Line Tools.
+With [Homebrew](https://brew.sh):
 
 ```sh
-make install
+brew install --cask sagenkoder/tap/nudge
 ```
 
-This builds `Nudge.app`, copies it to `~/Applications`, and adds a LaunchAgent so it starts at login. The first time you use a shortcut, macOS asks you to allow Nudge under **System Settings → Privacy & Security → Accessibility**.
+Or download `Nudge-x.y.z.dmg` from the [latest release](https://github.com/SagenKoder/nudge/releases/latest)
+and drag Nudge into Applications.
 
-If you have an Apple Development certificate in your keychain, the app is signed with it, so the permission survives rebuilds. Without one it is ad-hoc signed, and macOS asks again after each rebuild.
+Then open Nudge. A small window asks for the **Accessibility** permission, which macOS requires
+for any app that moves other apps' windows. Click **Open Accessibility Settings**, switch Nudge on,
+and the window closes by itself. Nudge also adds itself to your Login Items, so it starts with your Mac.
 
-Rectangle, Spectacle and similar tools that use the same shortcuts must be quit first. Otherwise the shortcuts are already taken.
+Requires macOS 13 Ventura or later, on Apple silicon or Intel.
 
-## Other commands
+## Using it
+
+- **Settings:** open Nudge again from Finder or Spotlight to show its window. It has
+  "Start at login" and "Quit Nudge".
+- **Shortcut conflicts:** Rectangle, Spectacle and similar apps often use the same shortcuts.
+  Nudge tells you if a shortcut is taken, and picks it up as soon as the other app quits.
+
+## Uninstall
 
 ```sh
-make test       # unit tests for the layout logic
-make restart    # restart the running app
-make logs       # stream its logs
-make icon       # redraw Support/AppIcon.icns from scripts/make-icon.swift
-make uninstall  # stop it and remove the app and LaunchAgent
+brew uninstall --cask --zap nudge
 ```
 
-## How it works
+Or quit Nudge from its window, drag it from Applications to the Bin, and remove it under
+System Settings → Privacy & Security → Accessibility.
 
-- `Sources/NudgeCore`: pure geometry. It works out which screen a window is on, where each half is, and when a repeat press should jump to the next monitor. It is fully unit tested.
-- `Sources/Nudge`: global hotkeys through Carbon `RegisterEventHotKey` (no extra permission needed), and window moves through the Accessibility API.
+## Privacy and security
+
+Nudge never connects to the internet, collects nothing, and only sees its own five key combinations.
+See [SECURITY.md](SECURITY.md) for what the Accessibility permission is used for, how to verify a
+download, and how to report a vulnerability.
+
+## Building from source
+
+```sh
+git clone https://github.com/SagenKoder/nudge.git && cd nudge
+swift test      # run the unit tests
+make install    # build, sign and copy to /Applications, then launch
+```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for how the code is laid out and how releases are made.
 
 ## License
 
-MIT
+[MIT](LICENSE) © 2026 Alexander Sagen
