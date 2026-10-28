@@ -6,7 +6,9 @@ All notable changes to Nudge are listed here. The format follows
 
 ## [Unreleased]
 
-## [1.0.1]
+## [1.0.2]
+
+1.0.1 was tagged but never released (Apple's notarization ticket service failed during the build).
 
 ### Fixed
 
@@ -27,6 +29,6 @@ All notable changes to Nudge are listed here. The format follows
 - A window across the edge between two screens snaps to the half next to that edge first.
 - Signed and notarized universal (Apple silicon and Intel) builds.
 
-[Unreleased]: https://github.com/SagenKoder/nudge/compare/v1.0.1...HEAD
-[1.0.1]: https://github.com/SagenKoder/nudge/compare/v1.0.0...v1.0.1
+[Unreleased]: https://github.com/SagenKoder/nudge/compare/v1.0.2...HEAD
+[1.0.2]: https://github.com/SagenKoder/nudge/compare/v1.0.0...v1.0.2
 [1.0.0]: https://github.com/SagenKoder/nudge/releases/tag/v1.0.0
