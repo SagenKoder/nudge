@@ -13,7 +13,6 @@ All notable changes to Nudge are listed here. The format follows
 - Start at login survives reinstalls and `brew upgrade`. Nudge now puts its login item back on
   launch when it went missing, unless you switched it off in Nudge's window. Switching it off in
   System Settings is respected too.
-- A window across the edge between two screens now snaps to the half next to that edge first.
 
 ## [1.0.0]
 
@@ -25,6 +24,7 @@ All notable changes to Nudge are listed here. The format follows
 - A welcome window that walks through the Accessibility permission and closes by itself once it is granted.
 - Warns when another app (such as Rectangle) already uses the shortcuts, and picks them up once it quits.
 - Starts at login, switchable in Nudge's window or System Settings → General → Login Items.
+- A window across the edge between two screens snaps to the half next to that edge first.
 - Signed and notarized universal (Apple silicon and Intel) builds.
 
 [Unreleased]: https://github.com/SagenKoder/nudge/compare/v1.0.1...HEAD
