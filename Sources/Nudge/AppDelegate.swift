@@ -9,7 +9,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         hotKeys.register()
-        LoginItem.enableOnFirstLaunch()
+        LoginItem.restoreIfWanted()
         mover.onMissingPermission = { [weak self] in self?.panel.show(closeWhenReady: true) }
 
         if !AXIsProcessTrusted() || !hotKeys.missing.isEmpty {

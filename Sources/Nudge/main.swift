@@ -5,7 +5,7 @@ import AppKit
 MainActor.assumeIsolated {
     if CommandLine.arguments.contains("--unregister-login-item") {
         // Used by `make uninstall`, since only the app itself can remove its login item.
-        LoginItem.setEnabled(false)
+        LoginItem.unregister()
         exit(0)
     }
 
