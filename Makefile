@@ -13,6 +13,8 @@ IDENTITY  ?= $(shell security find-identity -v -p codesigning 2>/dev/null | grep
 SIGN_AS   := $(if $(IDENTITY),$(IDENTITY),-)
 TIMESTAMP ?= --timestamp=none
 NOTARY    = xcrun notarytool submit --key "$(NOTARY_KEY)" --key-id "$(NOTARY_KEY_ID)" --issuer "$(NOTARY_ISSUER)" --wait
+# Apple's ticket service drops connections now and then, and a fresh ticket can take a moment to appear.
+STAPLE    = for try in 1 2 3 4 5; do xcrun stapler staple $(1) && break; [ $$try = 5 ] && exit 1; sleep $$((try * 10)); done
 
 .PHONY: all build test app install uninstall release icon logs clean
 
@@ -58,7 +60,7 @@ uninstall:
 release: app
 	ditto -c -k --keepParent $(BUILD_APP) $(BUILD_DIR)/Nudge-notarize.zip
 	$(NOTARY) $(BUILD_DIR)/Nudge-notarize.zip
-	xcrun stapler staple $(BUILD_APP)
+	$(call STAPLE,$(BUILD_APP))
 	rm -rf $(BUILD_DIR)/dmg $(DMG)
 	mkdir -p $(BUILD_DIR)/dmg
 	ditto $(BUILD_APP) $(BUILD_DIR)/dmg/Nudge.app
@@ -66,7 +68,7 @@ release: app
 	hdiutil create -volname Nudge -srcfolder $(BUILD_DIR)/dmg -fs HFS+ -format UDZO -ov $(DMG)
 	codesign --force $(TIMESTAMP) --sign "$(SIGN_AS)" $(DMG)
 	$(NOTARY) $(DMG)
-	xcrun stapler staple $(DMG)
+	$(call STAPLE,$(DMG))
 	spctl --assess --type execute --verbose $(BUILD_APP)
 	spctl --assess --type open --context context:primary-signature --verbose $(DMG)
 	cd $(BUILD_DIR) && shasum -a 256 $(notdir $(DMG)) > SHA256SUMS
